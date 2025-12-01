@@ -1,0 +1,25 @@
+services:
+  sCalculadora: # Servei donat per l’aplicació
+    image: icalculadora:1.1 # Imatge a construir per crear el contenidor
+    build: .
+    expose:
+      - 80 # Exposa el port 80 dels contenidors però no els publica a la màquina virtual
+    networks:
+      - xPj9f4a8 # Nom de la xarxa dins de docker-compose.yml
+
+  sDistribueixCarrega: # Servei Proxy HTTP per fer distribució de carrega
+    image: nginx:latest # Imatge de contenidor amb el proxy HTTP que es baixarà
+    container_name: cProxyHTTP # Nom del contenidor amb el proxy HTTP
+    volumes: # Compartint nginx.conf de la màquina virtual amb el contenidor
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - sCalculadora # Si SLlaunes no funciona, sDistribueixCarrega tampoc.
+    ports:
+      - 8000:80 # Exposa i publica el port 80 del proxy HTTP al 8000 de la màquina virtual
+    networks:
+      - xPj9f4a8 # Nom de la xarxa dins de docker-compose.yml
+
+networks:
+  xPj9f4a8:
+    name: Pj9f4a8 # Nom de la xarxa dins de la màquina host dels dockers
+    driver: bridge

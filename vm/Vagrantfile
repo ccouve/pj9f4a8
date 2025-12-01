@@ -1,0 +1,62 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+# VARIABLES
+
+BOX_IMAGE = "debian/bookworm64"
+PROVIDER = "virtualbox"
+NUM_CPUS = 3
+MEMORIA_RAM = 3072
+NOM_MAQUINA = "pj9f4a8_jumoma"
+HOSTNAME = "pj9f4a8-jumoma.fjeclot.local"
+CARPETA_MAQ_FIS = "../projectes"
+CARPETA_MAQ_VIR = "/home/vagrant/projectes"
+TIPUS_DE_XARXA = "public_network"
+
+# CONFIGURACIÓ DE LA MÀQUINA
+
+Vagrant.configure("2") do |config|
+	
+	# BOX
+	config.vm.box = BOX_IMAGE
+  
+	# CONFIGURACIÓ ESPECÍFICA DEL PROVIDER
+	config.vm.provider PROVIDER do |provider|
+		provider.name = NOM_MAQUINA
+		provider.memory = MEMORIA_RAM
+		provider.cpus = NUM_CPUS
+		provider.customize ['modifyvm', :id, '--clipboard', 'bidirectional']
+	end
+
+	# CONFIGURACIÓ GENERAL
+	config.vm.hostname = HOSTNAME	
+	config.vm.synced_folder CARPETA_MAQ_FIS,CARPETA_MAQ_VIR
+	config.vm.network TIPUS_DE_XARXA
+  
+
+	# PROGRAMARI A INSTAL·LAR I ORDRES A EXECUTAR DURANT LA CREACIÓ DE LA MÀQUINA (PROVISION)
+	config.vm.provision "shell", inline: <<-SHELL
+		#
+		# 1- Actualització de la llista de programari. Instal·lació del programari general
+		#
+		sudo apt-get -y update
+		sudo apt-get -y install net-tools whois aptitude
+		#
+		# 2- Ordres d'instal·lació de Docker. Permís a l'usuari vagrant per utilitzar Docker sense sudo
+		#
+		#2.1- Programari necessari per poder instal·lar Docker
+		sudo apt-get -y install apt-transport-https ca-certificates curl gnupg
+		#2.2- Clau GPG per poder comprovar la signatura i integritat del programari descarregat
+		curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker.gpg
+		#2.3- Afegint el dipòsit a sources.list
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] \
+		https://download.docker.com/linux/debian bookworm stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+		#2.4- Descarregant el programari bàsic de Docker
+		sudo apt-get -y update
+		sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+		#2.5- Afegint l'usuari vagrant al grup docker
+		sudo gpasswd -a vagrant docker
+	SHELL
+  
+end
